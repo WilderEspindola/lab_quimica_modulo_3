@@ -7,14 +7,13 @@ using UnityEngine.XR.Interaction.Toolkit.Interactors;
 public class DualPartButton : MonoBehaviour
 {
     [Header("Componentes del Botón")]
-    public Transform[] movingParts;  // Asignar pCylinder96 y pCylinder97
-    public float pressDepth = 0.05f; // Distancia que baja el botón (en metros)
-    public float returnSpeed = 10f;  // Velocidad de retorno
+    public Transform[] movingParts;
+    public float targetZOffset = -0.00417f; // Valor exacto en Z
 
-    [Header("Configuración de Interacción")]
-    public bool stayPressed = false; // Si el botón queda presionado o vuelve solo
-    public bool hapticFeedback = true; // Vibración al presionar
-    public float hapticIntensity = 0.3f;
+    [Header("Configuración")]
+    public float returnSpeed = 20f;
+    public bool hapticFeedback = true;
+    [Range(0, 1)] public float hapticIntensity = 0.3f;
     public float hapticDuration = 0.1f;
 
     private Vector3[] originalPositions;
@@ -22,27 +21,19 @@ public class DualPartButton : MonoBehaviour
 
     void Start()
     {
-        // Guardar posiciones originales
         originalPositions = new Vector3[movingParts.Length];
         for (int i = 0; i < movingParts.Length; i++)
         {
             originalPositions[i] = movingParts[i].localPosition;
         }
 
-        // Configurar eventos de interacción
-        XRSimpleInteractable interactable = GetComponent<XRSimpleInteractable>();
-        interactable.selectEntered.AddListener(PressButton);
-
-        if (!stayPressed)
-        {
-            interactable.selectExited.AddListener(ReleaseButton);
-        }
+        GetComponent<XRSimpleInteractable>().selectEntered.AddListener(PressButton);
+        GetComponent<XRSimpleInteractable>().selectExited.AddListener(ReleaseButton);
     }
 
     void Update()
     {
-        // Animación de retorno si no está presionado
-        if (!isPressed && !stayPressed)
+        if (!isPressed)
         {
             for (int i = 0; i < movingParts.Length; i++)
             {
@@ -59,49 +50,24 @@ public class DualPartButton : MonoBehaviour
     {
         isPressed = true;
 
-        // Mover partes a posición presionada (eje Z negativo)
         for (int i = 0; i < movingParts.Length; i++)
         {
             Vector3 pressedPosition = originalPositions[i];
-            pressedPosition.z -= pressDepth;
+            pressedPosition.z = originalPositions[i].z + targetZOffset;
             movingParts[i].localPosition = pressedPosition;
         }
 
-        // Retroceso háptico (solo si está habilitado)
         if (hapticFeedback && args.interactorObject is XRBaseInputInteractor inputInteractor)
         {
-            inputInteractor.xrController.SendHapticImpulse(hapticIntensity, hapticDuration);
+            if (inputInteractor.TryGetComponent(out XRController controller))
+            {
+                controller.SendHapticImpulse(hapticIntensity, hapticDuration);
+            }
         }
-
-        // Ejecutar acción del botón
-        ExecuteButtonAction();
     }
 
     private void ReleaseButton(SelectExitEventArgs args)
     {
         isPressed = false;
-    }
-
-    private void ExecuteButtonAction()
-    {
-        string buttonName = gameObject.name.ToLower();
-
-        if (buttonName.Contains("on")) // Si es el botón "ON"
-        {
-            Debug.Log("Botón ON activado");
-            // Aquí tu lógica para el botón ON (ej: encender luz)
-        }
-        else if (buttonName.Contains("off")) // Si es el botón "OFF"
-        {
-            Debug.Log("Botón OFF activado");
-            // Aquí tu lógica para el botón OFF (ej: apagar luz)
-        }
-    }
-
-    // Método público para controlar el botón desde otros scripts
-    public void ToggleButton(bool pressed)
-    {
-        if (pressed) PressButton(null);
-        else ReleaseButton(null);
     }
 }
