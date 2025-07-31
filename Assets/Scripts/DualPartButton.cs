@@ -8,7 +8,7 @@ public class DualPartButton : MonoBehaviour
 {
     [Header("Configuración del Botón")]
     public Transform[] movingParts;       // Asignar pCylinder96 y pCylinder97
-    public float pressedZPosition = -0.00027f;
+    public float pressedZPosition = -0.00012f;
     public float returnSpeed = 25f;
 
     [Header("Feedback Háptico")]
